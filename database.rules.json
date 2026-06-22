@@ -1,0 +1,32 @@
+{
+  "//": "Regole Realtime Database per Cassa Griglia.",
+  "//1": "Senza login non è possibile bloccare l'accesso a chi ha il link;",
+  "//2": "queste regole almeno limitano la struttura dei dati e si possono",
+  "//3": "DISATTIVARE dopo l'evento impostando read/write a false.",
+  "//4": "Per pubblicarle:  firebase deploy --only database",
+  "//5": "oppure incollale nella Console > Realtime Database > scheda 'Regole'.",
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "items": {
+      "$id": {
+        "name":  { ".validate": "newData.isString()" },
+        "price": { ".validate": "newData.isNumber()" },
+        "total": { ".validate": "newData.isNumber()" },
+        "sold":  { ".validate": "newData.isNumber()" },
+        "pos":   { ".validate": "newData.isNumber()" }
+      }
+    },
+    "orders": {
+      "$id": {
+        "num":       { ".validate": "newData.isNumber()" },
+        "total":     { ".validate": "newData.isNumber()" },
+        "status":    { ".validate": "newData.isString()" },
+        "createdAt": { ".validate": "newData.isNumber()" }
+      }
+    },
+    "meta": {
+      "counter": { ".validate": "newData.isNumber()" }
+    }
+  }
+}
