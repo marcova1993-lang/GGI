@@ -16,7 +16,7 @@
 //  su un singolo dispositivo (salvataggio locale, niente sincronizzazione).
 // =====================================================================
 
-export const firebaseConfig = {
+/*export const firebaseConfig = {
   apiKey: "INCOLLA_QUI",
   authDomain: "INCOLLA_QUI",
   databaseURL: "INCOLLA_QUI",
@@ -30,3 +30,26 @@ export const firebaseConfig = {
 export const firebaseConfigured =
   !!firebaseConfig.databaseURL &&
   !firebaseConfig.databaseURL.includes("INCOLLA_QUI");
+*/
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAl_pzSbkZd325olz6MJKRnT52rx9f8aYc",
+  authDomain: "ggi-prezzi.firebaseapp.com",
+  databaseURL: "https://ggi-prezzi-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ggi-prezzi",
+  storageBucket: "ggi-prezzi.firebasestorage.app",
+  messagingSenderId: "257388413946",
+  appId: "1:257388413946:web:1c6874ebf1630660ca5a43",
+  measurementId: "G-H0YJNLX3MF"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
