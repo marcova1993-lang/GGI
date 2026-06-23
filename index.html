@@ -11,7 +11,11 @@
 <body>
   <header class="topbar">
     <div class="brand">🔥 Cassa Griglia</div>
-    <div class="conn" id="connStatus" title="Stato connessione">●</div>
+    <div class="topright">
+      <span id="userEmail" class="user-email"></span>
+      <button id="authBtn" class="auth-btn">Accedi</button>
+      <span class="conn" id="connStatus" title="Stato connessione">●</span>
+    </div>
   </header>
 
   <nav class="tabs" id="tabs">
@@ -30,37 +34,25 @@
         <span id="cassaTotal" class="total-amount">Fr. 0.00</span>
       </div>
 
-      <div class="pay-panel">
-        <div class="pay-label">Il cliente paga:</div>
-        <div class="quick-pay" id="quickPay">
-          <button data-amount="10">10</button>
-          <button data-amount="20">20</button>
-          <button data-amount="50">50</button>
-          <button data-amount="100">100</button>
-          <button data-amount="200">200</button>
-        </div>
-        <div class="pay-row">
-          <input type="number" id="paidInput" inputmode="decimal" placeholder="Altro importo…" min="0" step="0.05" />
-          <div class="change-box">
-            <span>RESTO</span>
-            <span id="changeAmount" class="change-amount">Fr. 0.00</span>
-          </div>
-        </div>
-        <div id="changeTable" class="change-table"></div>
+      <div class="pay-panel" id="payPanel">
+        <div class="pay-label" id="payLabel">Resto da dare se il cliente paga con:</div>
+        <div id="changePreview" class="change-table"></div>
       </div>
 
       <div class="cassa-actions">
         <button id="resetOrderBtn" class="btn btn-grey">↺ Azzera</button>
-        <button id="confirmOrderBtn" class="btn btn-green">✓ Conferma ordine</button>
+        <button id="confirmOrderBtn" class="btn btn-green">✓ Conferma</button>
       </div>
       <div id="cassaMsg" class="msg"></div>
     </section>
 
     <!-- ============ CUCINA ============ -->
     <section id="view-cucina" class="view">
-      <div class="stock-overview" id="stockOverview"></div>
-      <h3 class="section-title">Ordini da preparare</h3>
-      <div id="ordersList" class="orders-list"></div>
+      <h3 class="section-title">Preparazione</h3>
+      <div class="prep-list" id="prepList"></div>
+
+      <h3 class="section-title">Storico ordinazioni</h3>
+      <div id="historyList" class="orders-list"></div>
     </section>
 
     <!-- ============ IMPOSTAZIONI ============ -->
@@ -71,7 +63,11 @@
 
       <h3 class="section-title">Gestione giornata</h3>
       <button id="resetSoldBtn" class="btn btn-orange full">↻ Azzera vendite (nuova giornata)</button>
-      <button id="clearOrdersBtn" class="btn btn-grey full">🗑 Svuota ordini cucina</button>
+      <button id="clearOrdersBtn" class="btn btn-grey full">🗑 Svuota storico ordinazioni</button>
+
+      <h3 class="section-title">Log attività</h3>
+      <div id="logList" class="log-list"></div>
+      <button id="clearLogBtn" class="btn btn-grey full">🗑 Svuota log</button>
 
       <h3 class="section-title">Connessione</h3>
       <p id="backendInfo" class="hint"></p>

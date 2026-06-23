@@ -14,6 +14,7 @@
         "price": { ".validate": "newData.isNumber()" },
         "total": { ".validate": "newData.isNumber()" },
         "sold":  { ".validate": "newData.isNumber()" },
+        "out":   { ".validate": "newData.isNumber()" },
         "pos":   { ".validate": "newData.isNumber()" }
       }
     },
@@ -21,8 +22,13 @@
       "$id": {
         "num":       { ".validate": "newData.isNumber()" },
         "total":     { ".validate": "newData.isNumber()" },
-        "status":    { ".validate": "newData.isString()" },
         "createdAt": { ".validate": "newData.isNumber()" }
+      }
+    },
+    "log": {
+      "$id": {
+        "ts":   { ".validate": "newData.isNumber()" },
+        "user": { ".validate": "newData.isString()" }
       }
     },
     "meta": {

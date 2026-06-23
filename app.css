@@ -171,3 +171,50 @@ main { padding: 12px; max-width: 640px; margin: 0 auto; }
 .setting-fields .lbl { grid-column: 1 / -1; font-size: 12px; color: var(--muted); display: grid; grid-template-columns: 1fr 80px 80px; gap: 8px; }
 .del-btn { width: 40px; height: 40px; border-radius: 8px; border: none; background: #ffecea; color: var(--red); font-size: 18px; cursor: pointer; }
 .hint { color: var(--muted); font-size: 14px; line-height: 1.5; padding: 0 4px; }
+
+/* ---------- Login / topbar destra ---------- */
+.topright { display: flex; align-items: center; gap: 8px; }
+.user-email { color: #eaf2ff; font-size: 12px; font-weight: 600; max-width: 120px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auth-btn { background: rgba(255,255,255,.18); color: #fff; border: none;
+  padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.auth-btn:active { transform: scale(.96); }
+
+/* ---------- Quantità negativa / totale negativo ---------- */
+.qty-val.neg { color: var(--red); }
+.total-amount.neg { color: #ff9b94; }
+.ct.refund { background: #ffecea; }
+.ct.refund b { color: var(--red); }
+
+/* ---------- Cucina: preparazione ---------- */
+.prep-list { display: flex; flex-direction: column; gap: 10px; }
+.prep-row { background: var(--card); border-radius: 14px; padding: 12px; box-shadow: var(--shadow); }
+.prep-head { display: flex; justify-content: space-between; align-items: baseline; }
+.prep-name { font-weight: 800; font-size: 18px; }
+.prep-count { font-size: 14px; color: var(--muted); }
+.prep-count b { color: var(--ink); font-size: 18px; }
+.prep-out { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 10px; }
+.prep-stats { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--muted); }
+.prep-stats b { font-size: 17px; }
+.prep-stats .todo.active b { color: var(--orange); }
+.prep-stats .done b { color: var(--green-d); }
+.prep-btns { display: flex; gap: 8px; align-items: center; }
+.out-btn { border: none; border-radius: 10px; color: #fff; font-weight: 800; cursor: pointer; }
+.out-btn.plus { background: var(--green-d); padding: 14px 18px; font-size: 16px; }
+.out-btn.minus { background: var(--grey); width: 44px; height: 44px; font-size: 22px; }
+.out-btn:disabled { opacity: .35; }
+.out-btn:active { transform: scale(.95); }
+
+/* ---------- Storico ordinazioni ---------- */
+.order-card.refund { border-left-color: var(--red); }
+.order-id .tag { font-size: 11px; background: var(--red); color: #fff; padding: 2px 6px;
+  border-radius: 6px; vertical-align: middle; margin-left: 6px; }
+
+/* ---------- Log attività ---------- */
+.log-list { display: flex; flex-direction: column; gap: 4px; }
+.log-item { display: grid; grid-template-columns: auto auto 1fr auto; gap: 8px; align-items: baseline;
+  background: var(--card); border-radius: 8px; padding: 7px 10px; box-shadow: var(--shadow); font-size: 13px; }
+.log-when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.log-act { font-weight: 700; }
+.log-det { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-user { color: var(--blue); font-weight: 600; }

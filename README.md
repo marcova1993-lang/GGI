@@ -42,7 +42,24 @@ condiviso. Usiamo **Firebase Realtime Database** (piano gratuito sufficiente).
    "Firebase (tempo reale)".
 
 > **Nota sicurezza:** la "modalità test" lascia il database aperto per ~30 giorni.
-> Per un uso oltre la giornata dell'evento, imposta regole più restrittive o un'autenticazione.
+> Per un uso oltre la giornata dell'evento, imposta regole più restrittive (vedi
+> `database.rules.json`) o un'autenticazione.
+
+## Login Google (log di chi fa le modifiche)
+
+L'app registra **chi** ha fatto ogni azione (ordine, ristorno, annullo, uscita piatto,
+modifica listino) con la sua email Google. Per attivarlo:
+
+1. Console Firebase → **Build → Authentication → Inizia**.
+2. Scheda **Sign-in method → Aggiungi provider → Google → Abilita → Salva**.
+3. Scheda **Settings → Domini autorizzati → Aggiungi dominio** e inserisci il dominio
+   dove pubblichi l'app, es. `marcova1993-lang.github.io`
+   (`localhost` è già autorizzato per le prove).
+4. Ricarica l'app: in alto compare **Accedi** → login con Google. L'email appare nel
+   log (scheda ⚙︎ Impostazioni) e accanto a ogni ordinazione.
+
+> Se non si effettua il login, l'app funziona lo stesso ma le azioni sono registrate
+> come "anonimo". Il login non è obbligatorio per usare cassa e cucina.
 
 ## Pubblicare online (link accessibile da qualsiasi telefono)
 
@@ -61,13 +78,18 @@ Poi apri il link sul telefono e **"Aggiungi a schermata Home"** per usarla come 
 
 ## Uso quotidiano
 
-- **Cassa:** tocca **+/−** per comporre l'ordine → leggi il **totale** → tocca quanto
-  paga il cliente per vedere il **resto** → **Conferma ordine** (scala le scorte e
-  invia in cucina).
-- **Cucina:** vedi gli ordini in arrivo, tocca **Pronto ✓** quando è fatto, e tieni
-  d'occhio le **scorte rimanenti**.
-- **⚙︎ Impostazioni:** modifica listino, prezzi e buoni totali; a inizio giornata usa
-  **"Azzera vendite"** per ripristinare le scorte piene.
+- **Cassa:** tocca **+/−** per comporre l'ordine → leggi il **totale** e la **preview
+  istantanea del resto** (quanto rendere per le varie banconote) → **Conferma**.
+  - Il **+** non ha limite (i buoni sono fisici: possono essere più del previsto).
+  - Il **−** può andare in **negativo**: serve per i **ristorni**, e ri-aggiunge quelle
+    porzioni ai buoni disponibili (totale negativo = importo da restituire al cliente).
+- **Cucina:** conteggio **in avanti** (prenotati X / totale). Per ogni articolo, ogni
+  volta che consegni un piatto premi **Uscito ✓**: vedi così *usciti* e *da preparare*
+  (prenotati − usciti). In fondo c'è lo **storico** di tutte le ordinazioni (numero
+  progressivo, data/ora, e chi l'ha fatta); puoi **annullare** un'ordinazione (le
+  porzioni tornano disponibili).
+- **⚙︎ Impostazioni:** modifica listino, prezzi e buoni totali; **Log attività** con chi
+  ha fatto cosa; a inizio giornata usa **"Azzera vendite"** per ripristinare le scorte.
 
 ## File del progetto
 

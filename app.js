@@ -7,45 +7,61 @@ const $  = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 const fr = (n) => "Fr. " + (Number(n) || 0).toFixed(2);
 
-// Stato dell'interfaccia
 let store = null;
 let items = [];
 let orders = [];
-let cart = {};       // { itemId: quantità }
-let paid = 0;        // importo ricevuto dal cliente
+let logEntries = [];
+let cart = {};          // { itemId: quantità }  (può essere negativa = ristorno)
 
-// Tagli usati per il calcolo rapido del resto
+// Tagli per la preview istantanea del resto
 const DENOMS = [5, 10, 20, 50, 100, 200];
 
-// ---------------------------------------------------------------------
-//  Avvio
-// ---------------------------------------------------------------------
 init();
 async function init() {
   store = await createStore();
   store.onChange((state) => {
     items = state.items;
     orders = state.orders;
+    logEntries = state.log || [];
     renderAll();
     updateConn();
   });
   setupTabs();
-  setupPayment();
+  setupAuth();
   $("#resetOrderBtn").onclick = resetOrder;
   $("#confirmOrderBtn").onclick = confirmOrder;
   $("#addItemBtn").onclick = () => store.addItem();
   $("#resetSoldBtn").onclick = () => {
-    if (confirm("Azzerare tutte le vendite e ripristinare le scorte piene?")) store.resetSold();
+    if (confirm("Azzerare tutte le vendite e i piatti usciti (nuova giornata)?")) store.resetSold();
   };
   $("#clearOrdersBtn").onclick = () => {
-    if (confirm("Eliminare tutti gli ordini dalla cucina?")) store.clearOrders();
+    if (confirm("Eliminare tutto lo storico ordinazioni? (le scorte NON cambiano)")) store.clearOrders();
   };
+  $("#clearLogBtn").onclick = () => { if (confirm("Svuotare il log attività?")) store.clearLog(); };
   $("#backendInfo").textContent =
     "Modalità attuale: " + store.backendName +
     (store.backendName.startsWith("Locale")
-      ? ". I dati restano solo su questo telefono. Per condividerli con la cucina configura Firebase (vedi README.md)."
+      ? ". I dati restano solo su questo telefono (Firebase non configurato)."
       : ". Cassa e cucina sono sincronizzate in tempo reale.");
   updateConn();
+}
+
+// ---------- Login Google ----------
+function setupAuth() {
+  const btn = $("#authBtn");
+  const emailEl = $("#userEmail");
+  if (!store.canAuth) { btn.style.display = "none"; return; }
+  store.onAuth((user) => {
+    if (user) {
+      emailEl.textContent = user.email || "utente";
+      btn.textContent = "Esci";
+      btn.onclick = () => store.signOut();
+    } else {
+      emailEl.textContent = "";
+      btn.textContent = "Accedi";
+      btn.onclick = () => store.signIn();
+    }
+  });
 }
 
 function updateConn() {
@@ -55,9 +71,6 @@ function updateConn() {
   el.title = ok ? "Connesso" : "Non connesso";
 }
 
-// ---------------------------------------------------------------------
-//  Navigazione a schede
-// ---------------------------------------------------------------------
 function setupTabs() {
   $$(".tab").forEach(t => {
     t.onclick = () => {
@@ -69,36 +82,33 @@ function setupTabs() {
   });
 }
 
-// ---------------------------------------------------------------------
-//  Render generale
-// ---------------------------------------------------------------------
 function renderAll() {
   renderCassa();
   renderCucina();
   renderSettings();
+  renderLog();
 }
 
-const remaining = (it) => (it.total || 0) - (it.sold || 0);
+const available = (it) => (it.total || 0) - (it.sold || 0); // buoni disponibili (può andare sotto zero)
 
 // ---------- CASSA ----------
 function renderCassa() {
   const list = $("#cassaList");
   list.innerHTML = "";
   items.forEach(it => {
-    const rem = remaining(it);
+    const avail = available(it);
     const inCart = cart[it.id] || 0;
-    const canAdd = inCart < rem;
-    const remClass = rem <= 0 ? "zero" : (rem <= 5 ? "low" : "");
+    const availClass = avail <= 0 ? "zero" : (avail <= 5 ? "low" : "");
     const row = document.createElement("div");
     row.className = "item-row";
     row.innerHTML = `
       <div class="item-info">
         <div class="item-name">${esc(it.name)}</div>
-        <div class="item-meta">${fr(it.price)} · <span class="left ${remClass}">${rem} buoni</span></div>
+        <div class="item-meta">${fr(it.price)} · <span class="left ${availClass}">${avail} buoni</span></div>
       </div>
-      <button class="qty-btn minus" data-id="${it.id}" data-d="-1" ${inCart <= 0 ? "disabled" : ""}>−</button>
-      <div class="qty-val">${inCart}</div>
-      <button class="qty-btn plus" data-id="${it.id}" data-d="1" ${canAdd ? "" : "disabled"}>+</button>
+      <button class="qty-btn minus" data-id="${it.id}" data-d="-1">−</button>
+      <div class="qty-val ${inCart < 0 ? "neg" : ""}">${inCart}</div>
+      <button class="qty-btn plus" data-id="${it.id}" data-d="1">+</button>
     `;
     list.appendChild(row);
   });
@@ -109,12 +119,8 @@ function renderCassa() {
 }
 
 function changeQty(id, delta) {
-  const it = items.find(i => i.id === id);
-  if (!it) return;
   const cur = cart[id] || 0;
-  let next = cur + delta;
-  if (next < 0) next = 0;
-  if (next > remaining(it)) next = remaining(it);
+  const next = cur + delta;          // nessun limite: può superare le scorte o andare in negativo
   if (next === 0) delete cart[id]; else cart[id] = next;
   renderCassa();
 }
@@ -125,76 +131,56 @@ function cartTotal() {
     return sum + (it ? it.price * qty : 0);
   }, 0);
 }
+function cartHasItems() { return Object.values(cart).some(q => q !== 0); }
 
 function renderTotalsAndChange() {
   const total = cartTotal();
   $("#cassaTotal").textContent = fr(total);
-  $("#confirmOrderBtn").disabled = total <= 0;
+  $("#cassaTotal").classList.toggle("neg", total < 0);
+  $("#confirmOrderBtn").disabled = !cartHasItems();
 
-  const change = paid - total;
-  const ce = $("#changeAmount");
-  ce.textContent = fr(change);
-  ce.classList.toggle("neg", change < 0);
-
-  // Tabella resto per i tagli >= totale (utile a colpo d'occhio)
-  const ct = $("#changeTable");
-  ct.innerHTML = "";
+  const label = $("#payLabel");
+  const preview = $("#changePreview");
+  preview.innerHTML = "";
   if (total > 0) {
+    label.textContent = "Resto da dare se il cliente paga con:";
     DENOMS.filter(d => d >= total).forEach(d => {
       const div = document.createElement("div");
       div.className = "ct";
       div.innerHTML = `<span>${d}.–</span><b>${fr(d - total)}</b>`;
-      ct.appendChild(div);
+      preview.appendChild(div);
     });
+  } else if (total < 0) {
+    label.textContent = "Ristorno — da restituire al cliente:";
+    const div = document.createElement("div");
+    div.className = "ct refund";
+    div.innerHTML = `<span>Totale</span><b>${fr(-total)}</b>`;
+    preview.appendChild(div);
+  } else {
+    label.textContent = "Resto da dare se il cliente paga con:";
   }
-}
-
-function setupPayment() {
-  $("#quickPay").querySelectorAll("button").forEach(b => {
-    b.onclick = () => {
-      const amt = Number(b.dataset.amount);
-      paid = amt;
-      $("#paidInput").value = amt;
-      markQuick(amt);
-      renderTotalsAndChange();
-    };
-  });
-  $("#paidInput").oninput = (e) => {
-    paid = Number(e.target.value) || 0;
-    markQuick(paid);
-    renderTotalsAndChange();
-  };
-}
-function markQuick(amt) {
-  $("#quickPay").querySelectorAll("button").forEach(b =>
-    b.classList.toggle("sel", Number(b.dataset.amount) === amt));
 }
 
 function resetOrder() {
   cart = {};
-  paid = 0;
-  $("#paidInput").value = "";
-  markQuick(null);
   $("#cassaMsg").textContent = "";
   renderCassa();
 }
 
 async function confirmOrder() {
+  if (!cartHasItems()) return;
   const total = cartTotal();
-  if (total <= 0) return;
   const msg = $("#cassaMsg");
   $("#confirmOrderBtn").disabled = true;
-  const res = await store.confirmOrder({
-    cart: { ...cart }, total, paid, change: Math.max(0, paid - total),
-  });
+  const res = await store.confirmOrder({ cart: { ...cart }, total });
   if (res.ok) {
     msg.className = "msg ok";
-    msg.textContent = `✓ Ordine #${res.num} inviato in cucina` +
-      (paid > total ? ` · Resto ${fr(paid - total)}` : "");
-    cart = {}; paid = 0;
-    $("#paidInput").value = ""; markQuick(null);
+    msg.textContent = res.refund
+      ? `↩︎ Ristorno #${res.num} registrato · ${fr(-total)} al cliente`
+      : `✓ Ordine #${res.num} registrato`;
+    cart = {};
     renderCassa();
-    setTimeout(() => { if (msg.textContent.startsWith("✓")) msg.textContent = ""; }, 4000);
+    setTimeout(() => { if (msg.textContent.includes("#" + res.num)) msg.textContent = ""; }, 4000);
   } else {
     msg.className = "msg err";
     msg.textContent = "✗ " + res.error;
@@ -204,74 +190,77 @@ async function confirmOrder() {
 
 // ---------- CUCINA ----------
 function renderCucina() {
-  // Panoramica scorte
-  const ov = $("#stockOverview");
-  ov.innerHTML = "";
+  const list = $("#prepList");
+  list.innerHTML = "";
   items.forEach(it => {
-    const rem = remaining(it);
-    const pct = it.total ? Math.max(0, (rem / it.total) * 100) : 0;
-    const cls = rem <= 0 ? "zero" : (rem <= 5 ? "low" : "");
+    const sold = it.sold || 0;
+    const out = it.out || 0;
+    const toDo = sold - out;
+    const pct = it.total ? Math.min(100, (sold / it.total) * 100) : 0;
     const row = document.createElement("div");
-    row.className = "stock-row";
+    row.className = "prep-row";
     row.innerHTML = `
-      <div class="stock-head">
-        <span>${esc(it.name)}</span>
-        <span class="rem ${cls}">${rem} / ${it.total}</span>
+      <div class="prep-head">
+        <span class="prep-name">${esc(it.name)}</span>
+        <span class="prep-count">prenotati <b>${sold}</b> / ${it.total}</span>
       </div>
-      <div class="bar"><span class="${cls}" style="width:${pct}%"></span></div>`;
-    ov.appendChild(row);
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <div class="prep-out">
+        <div class="prep-stats">
+          <span class="todo ${toDo > 0 ? "active" : ""}">Da preparare: <b>${toDo}</b></span>
+          <span class="done">Usciti: <b>${out}</b></span>
+        </div>
+        <div class="prep-btns">
+          <button class="out-btn minus" data-id="${it.id}" data-d="-1" ${out <= 0 ? "disabled" : ""}>−</button>
+          <button class="out-btn plus" data-id="${it.id}" data-d="1" ${toDo <= 0 ? "disabled" : ""}>Uscito ✓</button>
+        </div>
+      </div>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll(".out-btn").forEach(b => {
+    b.onclick = () => store.plateOut(b.dataset.id, Number(b.dataset.d));
   });
 
-  // Ordini
-  const list = $("#ordersList");
-  const pending = orders.filter(o => o.status !== "done");
-  const done = orders.filter(o => o.status === "done");
-  list.innerHTML = "";
-  if (pending.length === 0 && done.length === 0) {
-    list.innerHTML = `<div class="empty">Nessun ordine ancora.</div>`;
+  // Storico ordinazioni
+  const hist = $("#historyList");
+  hist.innerHTML = "";
+  if (orders.length === 0) {
+    hist.innerHTML = `<div class="empty">Nessuna ordinazione ancora.</div>`;
     return;
   }
-  [...pending, ...done].forEach(o => list.appendChild(orderCard(o)));
+  orders.forEach(o => hist.appendChild(orderCard(o)));
 }
 
 function orderCard(o) {
   const card = document.createElement("div");
-  card.className = "order-card" + (o.status === "done" ? " done" : "");
+  card.className = "order-card" + (o.refund ? " refund" : "");
   const lines = Object.entries(o.cart || {}).map(([id, qty]) => {
     const it = items.find(i => i.id === id);
-    const name = it ? it.name : id;
-    return `<div class="oi"><span>${esc(name)}</span><b>×${qty}</b></div>`;
+    return `<div class="oi"><span>${esc(it ? it.name : id)}</span><b>×${qty}</b></div>`;
   }).join("");
   const t = new Date(o.createdAt);
-  const hh = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+  const when = t.toLocaleDateString("it-CH") + " " +
+    String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
   card.innerHTML = `
     <div class="order-top">
-      <span class="order-id">#${o.num}</span>
-      <span class="order-time">${hh}</span>
+      <span class="order-id">#${o.num}${o.refund ? ' <span class="tag">RISTORNO</span>' : ""}</span>
+      <span class="order-time">${when}</span>
     </div>
     <div class="order-items">${lines}</div>
     <div class="order-foot">
-      <span class="order-total">${fr(o.total)}</span>
-      ${o.status === "done"
-        ? `<button class="btn btn-grey" data-act="undo" style="flex:0 0 auto;padding:8px 14px">↺</button>`
-        : `<button class="btn btn-green" data-act="done" style="flex:0 0 auto;padding:10px 18px">Pronto ✓</button>`}
-      <button class="btn btn-red" data-act="del" style="flex:0 0 auto;padding:8px 12px">🗑</button>
+      <span class="order-total">${fr(o.total)}${o.user ? " · " + esc(shortUser(o.user)) : ""}</span>
+      <button class="btn btn-red" data-act="del" style="flex:0 0 auto;padding:8px 12px">Annulla 🗑</button>
     </div>`;
-  card.querySelectorAll("[data-act]").forEach(btn => {
-    btn.onclick = () => {
-      const a = btn.dataset.act;
-      if (a === "done") store.setOrderStatus(o.id, "done");
-      else if (a === "undo") store.setOrderStatus(o.id, "pending");
-      else if (a === "del") store.removeOrder(o.id);
-    };
-  });
+  card.querySelector('[data-act="del"]').onclick = () => {
+    if (confirm(`Annullare l'ordine #${o.num}? Le porzioni torneranno disponibili.`))
+      store.removeOrder(o.id);
+  };
   return card;
 }
 
 // ---------- IMPOSTAZIONI ----------
 function renderSettings() {
   const wrap = $("#settingsList");
-  // Evita di ricreare i campi mentre l'utente sta scrivendo
   if (document.activeElement && wrap.contains(document.activeElement)) return;
   wrap.innerHTML = "";
   items.forEach(it => {
@@ -299,7 +288,27 @@ function renderSettings() {
   });
 }
 
-// ---------------------------------------------------------------------
+function renderLog() {
+  const wrap = $("#logList");
+  if (!wrap) return;
+  if (logEntries.length === 0) { wrap.innerHTML = `<div class="empty">Nessuna attività.</div>`; return; }
+  wrap.innerHTML = logEntries.slice(0, 60).map(e => {
+    const t = new Date(e.ts);
+    const when = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+    return `<div class="log-item">
+        <span class="log-when">${when}</span>
+        <span class="log-act">${esc(e.action)}</span>
+        <span class="log-det">${esc(e.detail || "")}</span>
+        <span class="log-user">${esc(shortUser(e.user))}</span>
+      </div>`;
+  }).join("");
+}
+
+function shortUser(u) {
+  if (!u) return "—";
+  return u.includes("@") ? u.split("@")[0] : u;
+}
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
