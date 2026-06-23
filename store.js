@@ -74,6 +74,8 @@ class LocalStore {
     const d = this._read();
     d.event = name;
     d.items.forEach(i => { i.sold = 0; i.out = 0; });
+    d.counter = 0;     // la numerazione riparte da 1
+    d.orders = [];     // storico azzerato per il nuovo evento
     this._log(d, "nuovo evento", name);
     this._write(d);
   }
@@ -184,7 +186,7 @@ class FirebaseStore {
     m.onValue(m.ref(m.db, "orders"), s => { this.orders = s.val() || {}; this.emit(); });
     m.onValue(m.ref(m.db, "log"),    s => { this.log    = s.val() || {}; this.emit(); });
     m.onValue(m.ref(m.db, "meta"),   s => { this.meta   = s.val() || {}; this.emit(); });
-    // Login
+    // Login: completa un eventuale redirect e ascolta lo stato
     m.getRedirectResult(m.auth).catch(e => console.warn("redirect login:", e.code || e));
     m.onAuthStateChanged(m.auth, (user) => {
       this.currentUser = user ? (user.email || user.displayName || "utente") : "anonimo";
@@ -194,7 +196,20 @@ class FirebaseStore {
   }
   setCurrentUser() {/* gestito da onAuthStateChanged */}
   onAuth(cb) { this.authListeners.push(cb); cb(this.authUser || null); }
-  signIn()  { const m = this.fb; return m.signInWithRedirect(m.auth, m.provider); }
+  async signIn() {
+    const m = this.fb;
+    // Popup: affidabile su GitHub Pages (evita i problemi dei cookie di terze parti).
+    // Se il popup viene bloccato, si ripiega sul redirect.
+    try {
+      await m.signInWithPopup(m.auth, m.provider);
+    } catch (e) {
+      const code = e && e.code || "";
+      if (code.includes("popup-blocked") || code.includes("popup-closed") || code.includes("cancelled-popup")) {
+        return m.signInWithRedirect(m.auth, m.provider);
+      }
+      throw e;
+    }
+  }
   signOut() { const m = this.fb; return m.signOut(m.auth); }
 
   onChange(cb) { this.listeners.push(cb); this.emit(); return () => {}; }
@@ -210,7 +225,7 @@ class FirebaseStore {
   setEvent(name) { const m = this.fb; return m.set(m.ref(m.db, "meta/event"), name); }
   async newEvent(name) {
     const m = this.fb;
-    const updates = { "meta/event": name };
+    const updates = { "meta/event": name, "meta/counter": 0, "orders": null };
     Object.keys(this.items).forEach(id => { updates["items/" + id + "/sold"] = 0; updates["items/" + id + "/out"] = 0; });
     await m.update(m.ref(m.db), updates);
     this._pushLog("nuovo evento", name);
@@ -315,6 +330,7 @@ async function buildFirebaseStore() {
     ref: dbMod.ref, onValue: dbMod.onValue, set: dbMod.set, update: dbMod.update,
     remove: dbMod.remove, get: dbMod.get, push: dbMod.push, runTransaction: dbMod.runTransaction,
     onAuthStateChanged: authMod.onAuthStateChanged,
+    signInWithPopup: authMod.signInWithPopup,
     signInWithRedirect: authMod.signInWithRedirect,
     getRedirectResult: authMod.getRedirectResult,
     signOut: authMod.signOut,

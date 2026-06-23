@@ -69,7 +69,7 @@ function wireButtons() {
     if (!store) return;
     const name = prompt("Nome del nuovo evento (es. Maccabei 2026):", eventName || "");
     if (name === null) return;
-    if (confirm(`Creare l'evento "${name}" e azzerare tutte le vendite e i piatti usciti?`))
+    if (confirm(`Creare l'evento "${name}"?\n\nVerranno azzerati: vendite, piatti usciti, storico ordinazioni e numerazione (riparte da 1).`))
       store.newEvent(name.trim());
   };
   $("#clearOrdersBtn").onclick = () => {
@@ -91,7 +91,8 @@ function setupAuth() {
     } else {
       emailEl.textContent = "";
       btn.textContent = "Accedi";
-      btn.onclick = () => store.signIn();
+      btn.onclick = () => Promise.resolve(store.signIn())
+        .catch(e => showError("Login non riuscito: " + (e && (e.code || e.message) || e)));
     }
   });
 }
