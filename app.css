@@ -218,3 +218,11 @@ main { padding: 12px; max-width: 640px; margin: 0 auto; }
 .log-act { font-weight: 700; }
 .log-det { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log-user { color: var(--blue); font-weight: 600; }
+
+/* ---------- Banner errori ---------- */
+.err-banner {
+  position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 100;
+  background: #b3261e; color: #fff; padding: 12px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.3);
+  word-break: break-word;
+}

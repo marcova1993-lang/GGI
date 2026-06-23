@@ -278,29 +278,42 @@ class FirebaseStore {
 // ---------------------------------------------------------------------
 //  Factory
 // ---------------------------------------------------------------------
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout " + label)), ms)),
+  ]);
+}
+
+async function buildFirebaseStore() {
+  const appMod  = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const dbMod   = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+  const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  const app = appMod.initializeApp(firebaseConfig);
+  const db = dbMod.getDatabase(app);
+  const auth = authMod.getAuth(app);
+  const provider = new authMod.GoogleAuthProvider();
+  const store = new FirebaseStore({
+    db, auth, provider,
+    ref: dbMod.ref, onValue: dbMod.onValue, set: dbMod.set, update: dbMod.update,
+    remove: dbMod.remove, get: dbMod.get, push: dbMod.push, runTransaction: dbMod.runTransaction,
+    onAuthStateChanged: authMod.onAuthStateChanged,
+    signInWithRedirect: authMod.signInWithRedirect,
+    getRedirectResult: authMod.getRedirectResult,
+    signOut: authMod.signOut,
+  });
+  await store.init();
+  return store;
+}
+
 export async function createStore() {
   if (firebaseConfigured) {
     try {
-      const appMod  = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-      const dbMod   = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
-      const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-      const app = appMod.initializeApp(firebaseConfig);
-      const db = dbMod.getDatabase(app);
-      const auth = authMod.getAuth(app);
-      const provider = new authMod.GoogleAuthProvider();
-      const store = new FirebaseStore({
-        db, auth, provider,
-        ref: dbMod.ref, onValue: dbMod.onValue, set: dbMod.set, update: dbMod.update,
-        remove: dbMod.remove, get: dbMod.get, push: dbMod.push, runTransaction: dbMod.runTransaction,
-        onAuthStateChanged: authMod.onAuthStateChanged,
-        signInWithRedirect: authMod.signInWithRedirect,
-        getRedirectResult: authMod.getRedirectResult,
-        signOut: authMod.signOut,
-      });
-      await store.init();
-      return store;
+      // Se Firebase non risponde entro 8s, si passa al salvataggio locale
+      return await withTimeout(buildFirebaseStore(), 8000, "Firebase");
     } catch (e) {
       console.error("Firebase non disponibile, uso il salvataggio locale:", e);
+      window.__grigliaFirebaseError = String(e && e.message || e);
     }
   }
   return new LocalStore();

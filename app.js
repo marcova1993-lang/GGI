@@ -16,34 +16,59 @@ let cart = {};          // { itemId: quantità }  (può essere negativa = ristor
 // Tagli per la preview istantanea del resto
 const DENOMS = [5, 10, 20, 50, 100, 200];
 
+// Mostra a schermo eventuali errori JS (così si vedono senza aprire F12)
+function showError(msg) {
+  let b = document.getElementById("errBanner");
+  if (!b) {
+    b = document.createElement("div");
+    b.id = "errBanner";
+    b.className = "err-banner";
+    document.body.appendChild(b);
+  }
+  b.textContent = "⚠️ " + msg;
+  b.style.display = "block";
+}
+window.addEventListener("error", (e) => showError((e.message || "Errore") + (e.filename ? " — " + e.filename.split("/").pop() + ":" + e.lineno : "")));
+window.addEventListener("unhandledrejection", (e) => showError("Promise: " + (e.reason && (e.reason.message || e.reason) || "errore")));
+
 init();
 async function init() {
+  // 1) Navigazione e pulsanti SUBITO, indipendenti da Firebase
+  setupTabs();
+  wireButtons();
+
+  // 2) Avvio store (Firebase o locale) — non blocca la navigazione
   store = await createStore();
+  if (window.__grigliaFirebaseError)
+    showError("Firebase non raggiungibile (" + window.__grigliaFirebaseError + "). Uso il salvataggio locale.");
+
+  setupAuth();
   store.onChange((state) => {
     items = state.items;
     orders = state.orders;
     logEntries = state.log || [];
-    renderAll();
+    try { renderAll(); } catch (err) { showError("Render: " + (err.message || err)); }
     updateConn();
   });
-  setupTabs();
-  setupAuth();
-  $("#resetOrderBtn").onclick = resetOrder;
-  $("#confirmOrderBtn").onclick = confirmOrder;
-  $("#addItemBtn").onclick = () => store.addItem();
-  $("#resetSoldBtn").onclick = () => {
-    if (confirm("Azzerare tutte le vendite e i piatti usciti (nuova giornata)?")) store.resetSold();
-  };
-  $("#clearOrdersBtn").onclick = () => {
-    if (confirm("Eliminare tutto lo storico ordinazioni? (le scorte NON cambiano)")) store.clearOrders();
-  };
-  $("#clearLogBtn").onclick = () => { if (confirm("Svuotare il log attività?")) store.clearLog(); };
   $("#backendInfo").textContent =
     "Modalità attuale: " + store.backendName +
     (store.backendName.startsWith("Locale")
-      ? ". I dati restano solo su questo telefono (Firebase non configurato)."
+      ? ". I dati restano solo su questo telefono (Firebase non disponibile)."
       : ". Cassa e cucina sono sincronizzate in tempo reale.");
   updateConn();
+}
+
+function wireButtons() {
+  $("#resetOrderBtn").onclick = resetOrder;
+  $("#confirmOrderBtn").onclick = confirmOrder;
+  $("#addItemBtn").onclick = () => store && store.addItem();
+  $("#resetSoldBtn").onclick = () => {
+    if (store && confirm("Azzerare tutte le vendite e i piatti usciti (nuova giornata)?")) store.resetSold();
+  };
+  $("#clearOrdersBtn").onclick = () => {
+    if (store && confirm("Eliminare tutto lo storico ordinazioni? (le scorte NON cambiano)")) store.clearOrders();
+  };
+  $("#clearLogBtn").onclick = () => { if (store && confirm("Svuotare il log attività?")) store.clearLog(); };
 }
 
 // ---------- Login Google ----------
