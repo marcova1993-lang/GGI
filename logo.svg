@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <path id="ggiTop" d="M 26 100 A 74 74 0 0 1 174 100" fill="none"/>
+    <path id="ggiBot" d="M 36 118 A 66 66 0 0 0 164 118" fill="none"/>
+  </defs>
+
+  <!-- Anelli del distintivo -->
+  <circle cx="100" cy="100" r="99" fill="#f4d100"/>
+  <circle cx="100" cy="100" r="95" fill="#1f7a3d"/>
+  <circle cx="100" cy="100" r="64" fill="#f4d100"/>
+  <circle cx="100" cy="100" r="60" fill="#0a0a0a"/>
+
+  <!-- Testo ad arco -->
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="800" fill="#ffffff"
+        font-size="20" letter-spacing="1.5" text-anchor="middle">
+    <textPath href="#ggiTop" startOffset="50%">GRUPPO GIOVANI</textPath>
+  </text>
+  <text font-family="Arial, Helvetica, sans-serif" font-weight="800" fill="#ffffff"
+        font-size="22" letter-spacing="2" text-anchor="middle">
+    <textPath href="#ggiBot" startOffset="50%">IRAGNA</textPath>
+  </text>
+
+  <!-- Anforette gialle laterali -->
+  <g fill="#f4d100" stroke="#0a0a0a" stroke-width="1.5">
+    <path d="M33 96 q-5 0 -5 7 q0 9 8 9 q8 0 8 -9 q0 -7 -5 -7 q2 -3 -3 -3 q-5 0 -3 3 z"/>
+    <path d="M167 96 q-5 0 -5 7 q0 9 8 9 q8 0 8 -9 q0 -7 -5 -7 q2 -3 -3 -3 q-5 0 -3 3 z"/>
+  </g>
+
+  <!-- Ragno -->
+  <g stroke="#f4d100" stroke-width="3.4" fill="none" stroke-linecap="round">
+    <path d="M88 95 Q58 78 50 58"/>
+    <path d="M86 104 Q54 100 43 91"/>
+    <path d="M86 113 Q54 122 46 137"/>
+    <path d="M88 122 Q60 142 54 159"/>
+    <path d="M112 95 Q142 78 150 58"/>
+    <path d="M114 104 Q146 100 157 91"/>
+    <path d="M114 113 Q146 122 154 137"/>
+    <path d="M112 122 Q140 142 146 159"/>
+  </g>
+  <!-- Cheliceri -->
+  <g stroke="#f4d100" stroke-width="3" stroke-linecap="round">
+    <path d="M95 86 L91 75"/>
+    <path d="M105 86 L109 75"/>
+  </g>
+  <!-- Corpo -->
+  <ellipse cx="100" cy="96" rx="10" ry="12" fill="#1f7a3d" stroke="#0c3d1e" stroke-width="2"/>
+  <ellipse cx="100" cy="120" rx="16" ry="21" fill="#1f7a3d" stroke="#0c3d1e" stroke-width="2"/>
+  <text x="100" y="127" font-family="Arial, Helvetica, sans-serif" font-weight="900"
+        font-size="20" fill="#f4d100" text-anchor="middle">8</text>
+</svg>

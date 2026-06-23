@@ -3,14 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1f6feb" />
+  <meta name="theme-color" content="#1f7a3d" />
   <title>Cassa Griglia</title>
   <link rel="stylesheet" href="app.css" />
   <link rel="manifest" href="manifest.webmanifest" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">🔥 Cassa Griglia</div>
+    <div class="brand">
+      <img class="logo" src="logo.png" alt="GGI"
+           onerror="this.onerror=null;this.src='logo.svg'">
+      <div class="brand-txt">
+        <span class="brand-title">Gruppo Giovani Iragna</span>
+        <span class="brand-event" id="brandEvent"></span>
+      </div>
+    </div>
     <div class="topright">
       <span id="userEmail" class="user-email"></span>
       <button id="authBtn" class="auth-btn">Accedi</button>
@@ -61,8 +68,9 @@
       <div id="settingsList" class="settings-list"></div>
       <button id="addItemBtn" class="btn btn-grey full">+ Aggiungi articolo</button>
 
-      <h3 class="section-title">Gestione giornata</h3>
-      <button id="resetSoldBtn" class="btn btn-orange full">↻ Azzera vendite (nuova giornata)</button>
+      <h3 class="section-title">Evento</h3>
+      <input id="eventNameInput" class="event-input" placeholder="Nome evento (es. Maccabei 2026)" />
+      <button id="newEventBtn" class="btn btn-orange full">↻ Nuovo evento (azzera vendite)</button>
       <button id="clearOrdersBtn" class="btn btn-grey full">🗑 Svuota storico ordinazioni</button>
 
       <h3 class="section-title">Log attività</h3>

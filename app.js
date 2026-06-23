@@ -11,6 +11,7 @@ let store = null;
 let items = [];
 let orders = [];
 let logEntries = [];
+let eventName = "";
 let cart = {};          // { itemId: quantità }  (può essere negativa = ristorno)
 
 // Tagli per la preview istantanea del resto
@@ -47,6 +48,7 @@ async function init() {
     items = state.items;
     orders = state.orders;
     logEntries = state.log || [];
+    eventName = state.event || "";
     try { renderAll(); } catch (err) { showError("Render: " + (err.message || err)); }
     updateConn();
   });
@@ -62,8 +64,13 @@ function wireButtons() {
   $("#resetOrderBtn").onclick = resetOrder;
   $("#confirmOrderBtn").onclick = confirmOrder;
   $("#addItemBtn").onclick = () => store && store.addItem();
-  $("#resetSoldBtn").onclick = () => {
-    if (store && confirm("Azzerare tutte le vendite e i piatti usciti (nuova giornata)?")) store.resetSold();
+  $("#eventNameInput").onchange = (e) => { if (store) store.setEvent(e.target.value.trim()); };
+  $("#newEventBtn").onclick = () => {
+    if (!store) return;
+    const name = prompt("Nome del nuovo evento (es. Maccabei 2026):", eventName || "");
+    if (name === null) return;
+    if (confirm(`Creare l'evento "${name}" e azzerare tutte le vendite e i piatti usciti?`))
+      store.newEvent(name.trim());
   };
   $("#clearOrdersBtn").onclick = () => {
     if (store && confirm("Eliminare tutto lo storico ordinazioni? (le scorte NON cambiano)")) store.clearOrders();
@@ -108,10 +115,17 @@ function setupTabs() {
 }
 
 function renderAll() {
+  renderEvent();
   renderCassa();
   renderCucina();
   renderSettings();
   renderLog();
+}
+
+function renderEvent() {
+  $("#brandEvent").textContent = eventName || "";
+  const inp = $("#eventNameInput");
+  if (inp && document.activeElement !== inp) inp.value = eventName || "";
 }
 
 const available = (it) => (it.total || 0) - (it.sold || 0); // buoni disponibili (può andare sotto zero)
@@ -232,12 +246,12 @@ function renderCucina() {
       <div class="bar"><span style="width:${pct}%"></span></div>
       <div class="prep-out">
         <div class="prep-stats">
-          <span class="todo ${toDo > 0 ? "active" : ""}">Da preparare: <b>${toDo}</b></span>
+          <span class="todo ${toDo > 0 ? "active" : ""}">Da preparare: <b>${Math.max(0, toDo)}</b></span>
           <span class="done">Usciti: <b>${out}</b></span>
         </div>
         <div class="prep-btns">
           <button class="out-btn minus" data-id="${it.id}" data-d="-1" ${out <= 0 ? "disabled" : ""}>−</button>
-          <button class="out-btn plus" data-id="${it.id}" data-d="1" ${toDo <= 0 ? "disabled" : ""}>Uscito ✓</button>
+          <button class="out-btn plus" data-id="${it.id}" data-d="1">Uscito ✓</button>
         </div>
       </div>`;
     list.appendChild(row);
@@ -274,12 +288,7 @@ function orderCard(o) {
     <div class="order-items">${lines}</div>
     <div class="order-foot">
       <span class="order-total">${fr(o.total)}${o.user ? " · " + esc(shortUser(o.user)) : ""}</span>
-      <button class="btn btn-red" data-act="del" style="flex:0 0 auto;padding:8px 12px">Annulla 🗑</button>
     </div>`;
-  card.querySelector('[data-act="del"]').onclick = () => {
-    if (confirm(`Annullare l'ordine #${o.num}? Le porzioni torneranno disponibili.`))
-      store.removeOrder(o.id);
-  };
   return card;
 }
 

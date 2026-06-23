@@ -226,3 +226,17 @@ main { padding: 12px; max-width: 640px; margin: 0 auto; }
   font-size: 13px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.3);
   word-break: break-word;
 }
+
+/* ---------- Logo / intestazione ---------- */
+.topbar { padding: 8px 14px; font-size: 16px; background: #1f7a3d; }
+.tab.active { color: #1f7a3d; border-bottom-color: #1f7a3d; }
+.tabs { top: 54px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo { height: 38px; width: 38px; border-radius: 50%; background: #fff; flex: 0 0 auto; object-fit: cover; }
+.brand-txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.brand-title { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-event { font-size: 12px; font-weight: 600; color: #d8ffe6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Input evento ---------- */
+.event-input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px;
+  font-size: 16px; margin-bottom: 8px; }

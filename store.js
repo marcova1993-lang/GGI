@@ -50,7 +50,7 @@ class LocalStore {
   }
   _ensureSeed() {
     const d = this._read();
-    if (!d.items) this._write({ items: DEFAULT_ITEMS.map(i => ({ ...i })), orders: [], log: [], counter: 0 });
+    if (!d.items) this._write({ items: DEFAULT_ITEMS.map(i => ({ ...i })), orders: [], log: [], counter: 0, event: "" });
   }
   _log(d, action, detail) {
     (d.log = d.log || []).push({ id: uid(), ts: Date.now(), user: this.currentUser, action, detail });
@@ -66,7 +66,16 @@ class LocalStore {
       items:  (d.items || []).slice().sort((a, b) => (a.pos ?? 0) - (b.pos ?? 0)),
       orders: (d.orders || []).slice().sort((a, b) => b.createdAt - a.createdAt),
       log:    (d.log || []).slice().sort((a, b) => b.ts - a.ts),
+      event:  d.event || "",
     }));
+  }
+  setEvent(name) { const d = this._read(); d.event = name; this._write(d); }
+  newEvent(name) {
+    const d = this._read();
+    d.event = name;
+    d.items.forEach(i => { i.sold = 0; i.out = 0; });
+    this._log(d, "nuovo evento", name);
+    this._write(d);
   }
   setItem(id, fields) {
     const d = this._read();
@@ -119,8 +128,7 @@ class LocalStore {
     const d = this._read();
     const it = d.items.find(i => i.id === id);
     if (it) {
-      let out = (it.out || 0) + delta;
-      out = Math.max(0, Math.min(out, it.sold || 0));
+      const out = Math.max(0, (it.out || 0) + delta); // nessun limite massimo
       it.out = out;
       this._log(d, "uscita", `${it.name} (${delta > 0 ? "+" : ""}${delta}) → ${out}`);
     }
@@ -159,6 +167,7 @@ class FirebaseStore {
     this.items = {};
     this.orders = {};
     this.log = {};
+    this.meta = {};
     this.listeners = [];
     this.authListeners = [];
   }
@@ -174,6 +183,7 @@ class FirebaseStore {
     m.onValue(m.ref(m.db, "items"),  s => { this.items  = s.val() || {}; this.emit(); });
     m.onValue(m.ref(m.db, "orders"), s => { this.orders = s.val() || {}; this.emit(); });
     m.onValue(m.ref(m.db, "log"),    s => { this.log    = s.val() || {}; this.emit(); });
+    m.onValue(m.ref(m.db, "meta"),   s => { this.meta   = s.val() || {}; this.emit(); });
     // Login
     m.getRedirectResult(m.auth).catch(e => console.warn("redirect login:", e.code || e));
     m.onAuthStateChanged(m.auth, (user) => {
@@ -195,7 +205,15 @@ class FirebaseStore {
       .sort((a, b) => b.createdAt - a.createdAt);
     const log = Object.entries(this.log).map(([id, v]) => ({ id, ...v }))
       .sort((a, b) => b.ts - a.ts);
-    this.listeners.forEach(cb => cb({ items, orders, log }));
+    this.listeners.forEach(cb => cb({ items, orders, log, event: this.meta.event || "" }));
+  }
+  setEvent(name) { const m = this.fb; return m.set(m.ref(m.db, "meta/event"), name); }
+  async newEvent(name) {
+    const m = this.fb;
+    const updates = { "meta/event": name };
+    Object.keys(this.items).forEach(id => { updates["items/" + id + "/sold"] = 0; updates["items/" + id + "/out"] = 0; });
+    await m.update(m.ref(m.db), updates);
+    this._pushLog("nuovo evento", name);
   }
   _pushLog(action, detail) {
     const m = this.fb;
@@ -254,8 +272,7 @@ class FirebaseStore {
     let finalOut = 0, name = this.items[id]?.name || id;
     await m.runTransaction(m.ref(m.db, "items/" + id), (cur) => {
       if (!cur) return cur;
-      let out = (cur.out || 0) + delta;
-      out = Math.max(0, Math.min(out, cur.sold || 0));
+      const out = Math.max(0, (cur.out || 0) + delta); // nessun limite massimo
       cur.out = out; finalOut = out;
       return cur;
     });
