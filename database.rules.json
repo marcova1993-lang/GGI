@@ -1,10 +1,4 @@
 {
-  "//": "Regole Realtime Database per Cassa Griglia — ACCESSO SOLO CON LOGIN.",
-  "//1": "Lettura e scrittura consentite solo agli utenti autenticati (login Google).",
-  "//2": "Ferma le email 'regole non sicure' e protegge i dati.",
-  "//3": "Pubblicale in: Console Firebase > Realtime Database > scheda 'Regole' > Pubblica.",
-  "//4": "Ricorda: in Authentication > Sign-in method deve essere abilitato Google,",
-  "//5": "e in Authentication > Settings > Domini autorizzati dev'esserci il dominio del sito.",
   "rules": {
     ".read": "auth != null",
     ".write": "auth != null",
