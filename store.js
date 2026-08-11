@@ -172,27 +172,51 @@ class FirebaseStore {
     this.meta = {};
     this.listeners = [];
     this.authListeners = [];
+    this.dataSubs = [];      // unsubscribe dei listener dati
+    this.dataAttached = false;
+    this.seeded = false;
   }
   async init() {
     const m = this.fb;
-    const snap = await m.get(m.ref(m.db, "items"));
-    if (!snap.exists()) {
-      const obj = {};
-      DEFAULT_ITEMS.forEach(i => { const c = { ...i }; delete c.id; obj[i.id] = c; });
-      await m.set(m.ref(m.db, "items"), obj);
-    }
+    // .info/connected è sempre leggibile (non richiede login)
     m.onValue(m.ref(m.db, ".info/connected"), s => { this.online = !!s.val(); this.emit(); });
-    m.onValue(m.ref(m.db, "items"),  s => { this.items  = s.val() || {}; this.emit(); });
-    m.onValue(m.ref(m.db, "orders"), s => { this.orders = s.val() || {}; this.emit(); });
-    m.onValue(m.ref(m.db, "log"),    s => { this.log    = s.val() || {}; this.emit(); });
-    m.onValue(m.ref(m.db, "meta"),   s => { this.meta   = s.val() || {}; this.emit(); });
-    // Login: completa un eventuale redirect e ascolta lo stato
+    // Login: completa un eventuale redirect e ascolta lo stato.
+    // I dati vengono agganciati SOLO dopo il login (regole: auth != null).
     m.getRedirectResult(m.auth).catch(e => console.warn("redirect login:", e.code || e));
     m.onAuthStateChanged(m.auth, (user) => {
       this.currentUser = user ? (user.email || user.displayName || "utente") : "anonimo";
       this.authUser = user || null;
+      if (user) this._attachData(); else this._detachData();
       this.authListeners.forEach(cb => cb(user));
     });
+  }
+  async _attachData() {
+    if (this.dataAttached) return;
+    this.dataAttached = true;
+    const m = this.fb;
+    // Prima volta con database vuoto: inserisce il listino iniziale
+    try {
+      const snap = await m.get(m.ref(m.db, "items"));
+      if (!snap.exists() && !this.seeded) {
+        this.seeded = true;
+        const obj = {};
+        DEFAULT_ITEMS.forEach(i => { const c = { ...i }; delete c.id; obj[i.id] = c; });
+        await m.set(m.ref(m.db, "items"), obj);
+      }
+    } catch (e) { console.warn("seed:", e.code || e); }
+    this.dataSubs = [
+      m.onValue(m.ref(m.db, "items"),  s => { this.items  = s.val() || {}; this.emit(); }),
+      m.onValue(m.ref(m.db, "orders"), s => { this.orders = s.val() || {}; this.emit(); }),
+      m.onValue(m.ref(m.db, "log"),    s => { this.log    = s.val() || {}; this.emit(); }),
+      m.onValue(m.ref(m.db, "meta"),   s => { this.meta   = s.val() || {}; this.emit(); }),
+    ];
+  }
+  _detachData() {
+    this.dataSubs.forEach(unsub => { try { unsub(); } catch {} });
+    this.dataSubs = [];
+    this.dataAttached = false;
+    this.items = {}; this.orders = {}; this.log = {}; this.meta = {};
+    this.emit();
   }
   setCurrentUser() {/* gestito da onAuthStateChanged */}
   onAuth(cb) { this.authListeners.push(cb); cb(this.authUser || null); }

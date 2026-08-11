@@ -79,20 +79,40 @@ function wireButtons() {
 }
 
 // ---------- Login Google ----------
+function doSignIn() {
+  const om = $("#overlayMsg");
+  if (om) { om.className = "msg"; om.textContent = "Apertura login…"; }
+  return Promise.resolve(store.signIn())
+    .then(() => { if (om) om.textContent = ""; })
+    .catch(e => {
+      const code = e && (e.code || e.message) || e;
+      showError("Login non riuscito: " + code);
+      if (om) { om.className = "msg err"; om.textContent = "Login non riuscito: " + code; }
+    });
+}
+
 function setupAuth() {
   const btn = $("#authBtn");
   const emailEl = $("#userEmail");
-  if (!store.canAuth) { btn.style.display = "none"; return; }
+  const overlay = $("#loginOverlay");
+  const overlayBtn = $("#overlayLoginBtn");
+  if (!store.canAuth) {          // modalità locale: nessun login, nessun overlay
+    btn.style.display = "none";
+    if (overlay) overlay.hidden = true;
+    return;
+  }
+  if (overlayBtn) overlayBtn.onclick = doSignIn;
   store.onAuth((user) => {
     if (user) {
       emailEl.textContent = user.email || "utente";
       btn.textContent = "Esci";
       btn.onclick = () => store.signOut();
+      if (overlay) overlay.hidden = true;
     } else {
       emailEl.textContent = "";
       btn.textContent = "Accedi";
-      btn.onclick = () => Promise.resolve(store.signIn())
-        .catch(e => showError("Login non riuscito: " + (e && (e.code || e.message) || e)));
+      btn.onclick = doSignIn;
+      if (overlay) overlay.hidden = false;   // mostra la schermata di login
     }
   });
 }

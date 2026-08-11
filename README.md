@@ -58,8 +58,18 @@ modifica listino) con la sua email Google. Per attivarlo:
 4. Ricarica l'app: in alto compare **Accedi** → login con Google. L'email appare nel
    log (scheda ⚙︎ Impostazioni) e accanto a ogni ordinazione.
 
-> Se non si effettua il login, l'app funziona lo stesso ma le azioni sono registrate
-> come "anonimo". Il login non è obbligatorio per usare cassa e cucina.
+## Sicurezza: accesso solo con login
+
+Il database è protetto: **solo chi ha fatto il login con Google può leggere/scrivere**
+(vedi `database.rules.json`). All'apertura l'app mostra una schermata "Accedi con
+Google"; dopo l'accesso si usano normalmente cassa e cucina. Ogni telefono va quindi
+loggato una volta (l'accesso resta memorizzato).
+
+Per attivare/mantenere questa protezione:
+1. Pubblica le regole di `database.rules.json` in Console Firebase → Realtime Database
+   → **Regole** → **Pubblica** (ferma anche le email "regole non sicure").
+2. Assicurati che Google sia abilitato e che il dominio del sito sia tra i **Domini
+   autorizzati** (vedi sezione sopra).
 
 ## Pubblicare online (link accessibile da qualsiasi telefono)
 

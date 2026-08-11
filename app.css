@@ -240,3 +240,18 @@ main { padding: 12px; max-width: 640px; margin: 0 auto; }
 /* ---------- Input evento ---------- */
 .event-input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px;
   font-size: 16px; margin-bottom: 8px; }
+
+/* ---------- Schermata di login ---------- */
+.login-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: linear-gradient(160deg, #1f7a3d, #0f4d25);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px; color: #fff;
+}
+.login-overlay[hidden] { display: none; }
+.login-overlay .logo-big { width: 130px; height: 130px; margin-bottom: 18px;
+  background: #fff; border-radius: 50%; padding: 6px; }
+.login-overlay h2 { margin: 0 0 6px; font-size: 22px; }
+.login-overlay p { margin: 0 0 22px; opacity: .9; }
+.login-overlay .btn { flex: 0 0 auto; min-width: 220px; }
+.login-overlay .msg { color: #ffd0cc; }
